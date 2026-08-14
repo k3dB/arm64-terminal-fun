@@ -10,7 +10,7 @@ _main:
     mov     x29, sp
     stp     x19, x20, [sp, #-16]! // x19 = return value, x20 = *argv
 
-    cmp     x0, #2
+    cmp     x0, #2                // verify exactly one argument provided
     bne     .display_usage
 
     mov     x20, x1               // preserve argv pointer

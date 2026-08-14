@@ -15,35 +15,70 @@ _main:
 
     mov     x20, x1               // preserve argv pointer
     ldr     x1, [x1, #8]          // argv[1]
-    mov     x2, #-1               // length counter
 
     mov     x0, #0                // convert argv[1] to integer
     mov     x3, #10               // base 10
     mov     x4, #0                // digit counter for argv[1] length
 
 .next_byte:
-    ldrb    w2, [x1], #1         // read next byte, advance pointer
-    cbz     w2, .validate        // more bytes to process?
+    ldrb    w2, [x1], #1          // read next byte, advance pointer
+    cbz     w2, .validate         // more bytes to process?
 
-    sub     w2, w2, #'0'         // convert ASCII to digit
-    cmp     w2, #9               // check if valid digit
-    bhi     .display_usage       // unsigned: character was not '0'..'9'
+    sub     w2, w2, #'0'          // convert ASCII to digit
+    cmp     w2, #9                // check if valid digit
+    bhi     .display_usage        // unsigned: character was not '0'..'9'
 
-    madd    x0, x0, x3, x2       // result = result * 10 + digit
-    add     x4, x4, #1           // increment digit counter
+    madd    x0, x0, x3, x2        // result = result * 10 + digit
+    add     x4, x4, #1            // increment digit counter
     b       .next_byte
 
 .validate:
-    cbz     x0, .display_usage   // if year is 0, display usage
-    lsr     x1, x0, #16          // check if year is within 16-bit range
+    cbz     x0, .display_usage    // if year is 0, display usage
+    lsr     x1, x0, #16           // check if year is within 16-bit range
     cbnz    x1, .display_usage
 
-    // TODO: Implement leap year logic here
-    // For now, just display the argument as-is
+// Test if the year is a leap year. A year is a leap year if:
+// 1. It is divisible by 4
+// 2. If it is divisible by 100, it must also be divisible by 400
+    and     x1, x0, #3            // year divisible by 4?
+    cbnz    x1, .not_a_leap_year
 
+    mov     x2, #100              // Is the year divisible by 100?
+    sdiv    x1, x0, x2            // x = y / 100       | integer division
+    msub    x2, x1, x2, x0        // r = y - (x * 100) | get the remainder
+    cbnz    x2, .is_a_leap_year   // if not, it is a leap year
+
+    and     x2, x1, #3            // Is year / 100 divisible by 4 (by 400)?
+    cbnz    x2, .not_a_leap_year  // if not, it is not a leap year
+
+.is_a_leap_year:
+    mov     x5, #1
+    b       .print_year
+
+.not_a_leap_year:
+    mov     x5, #0
+    b       .print_year
+
+.print_year:
     mov     x0, #1                // stdout
     ldr     x1, [x20, #8]         // argv[1]
     mov     x2, x4                // length of argv[1]
+    mov     x16, #4               // macOS syscall: write
+    svc     #0x80
+
+    cbz     x5, .print_not_leap_year
+    adrp    x1, is_a_leap_year@PAGE
+    add     x1, x1, is_a_leap_year@PAGEOFF
+    mov     x2, #is_a_leap_year_len
+    b       .print_result
+
+.print_not_leap_year:
+    adrp    x1, not_a_leap_year@PAGE
+    add     x1, x1, not_a_leap_year@PAGEOFF
+    mov     x2, #not_a_leap_year_len
+
+.print_result:
+    mov     x0, #1                // stdout
     mov     x16, #4               // macOS syscall: write
     svc     #0x80
 
@@ -78,6 +113,14 @@ _main:
     svc     #0x80
 
 .section __TEXT, __const
+
+is_a_leap_year:
+    .ascii " is a leap year."
+    .set is_a_leap_year_len, . - is_a_leap_year
+
+not_a_leap_year:
+    .ascii " is not a leap year."
+    .set not_a_leap_year_len, . - not_a_leap_year
 
 usage:
     .ascii "Usage: leapyear <year>\n    <year> must be between 1 and 65535"

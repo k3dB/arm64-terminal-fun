@@ -80,7 +80,8 @@ _main:
 .section __TEXT, __const
 
 usage:
-    .ascii "Usage: leapyear <year>"
+    .ascii "Usage: leapyear <year>\n    <year> must be between 1 and 65535"
+    .ascii " (16-bit unsigned integer)"
     .set usage_len, . - usage
 
 newline:

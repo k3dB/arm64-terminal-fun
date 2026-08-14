@@ -9,7 +9,7 @@ _main:
     mov     x0, #1              // stdout
     adrp    x1, usage@PAGE      // buffer address
     add     x1, x1, usage@PAGEOFF
-    mov     x2, #24             // byte count
+    mov     x2, #usage_len      // byte count
     mov     x16, #4             // macOS syscall: write
     svc     #0x80
 
@@ -18,6 +18,7 @@ _main:
     mov     x16, #1             // macOS syscall: exit
     svc     #0x80
 
-.section __TEXT, __cstring
+.section __TEXT, __const
 usage:
-    .asciz "Usage: leapyear <year>\n"
+    .ascii "Usage: leapyear <year>\n"
+    .set usage_len, . - usage

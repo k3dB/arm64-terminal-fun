@@ -8,21 +8,42 @@
 _main:
     stp     x29, x30, [sp, #-16]! // prologue
     mov     x29, sp
-    stp     x19, x20, [sp, #-16]!
+    stp     x19, x20, [sp, #-16]! // x19 = return value, x20 = *argv
 
     cmp     x0, #2
     bne     .display_usage
 
-    mov     x4, x1                // preserve argv
-    ldr     x1, [x4, #8]          // argv[1]
+    mov     x20, x1               // preserve argv pointer
+    ldr     x1, [x1, #8]          // argv[1]
     mov     x2, #-1               // length counter
 
-.next_arg_byte:
-    add     x2, x2, #1
-    ldrb    w3, [x1, x2]          // load next byte
-    cbnz    w3, .next_arg_byte    // more bytes?
+    mov     x0, #0                // convert argv[1] to integer
+    mov     x3, #10               // base 10
+    mov     x4, #0                // digit counter for argv[1] length
+
+.next_byte:
+    ldrb    w2, [x1], #1         // read next byte, advance pointer
+    cbz     w2, .validate        // more bytes to process?
+
+    sub     w2, w2, #'0'         // convert ASCII to digit
+    cmp     w2, #9               // check if valid digit
+    bhi     .display_usage       // unsigned: character was not '0'..'9'
+
+    madd    x0, x0, x3, x2       // result = result * 10 + digit
+    add     x4, x4, #1           // increment digit counter
+    b       .next_byte
+
+.validate:
+    cbz     x0, .display_usage   // if year is 0, display usage
+    lsr     x1, x0, #16          // check if year is within 16-bit range
+    cbnz    x1, .display_usage
+
+    // TODO: Implement leap year logic here
+    // For now, just display the argument as-is
 
     mov     x0, #1                // stdout
+    ldr     x1, [x20, #8]         // argv[1]
+    mov     x2, x4                // length of argv[1]
     mov     x16, #4               // macOS syscall: write
     svc     #0x80
 

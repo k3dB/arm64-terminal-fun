@@ -5,6 +5,24 @@
 .global _main
 .align 2
 
+.macro round_away_from_zero
+    // after sdiv x0, x2, x1
+    // x10 = 10 (for base 10)
+    // x3 - x5 are available scratch registers
+    // x0 is the result
+    msub    x3, x0, x10, x2       // get the remainder so we can round
+    cmp     x0, #0                // check for negative result
+    cneg    x3, x3, lt            // get absolute value of remainder
+    mov     x4, #-1               // set up for rounding away from zero
+    mov     x5, #1
+    csel    x4, x4, x5, lt
+    lsl     x3, x3, #1            // multiply remainder by 2
+    cmp     x3, x1                // check if remainder * 2 >= denominator
+    blt     .no_round\@
+    add     x0, x0, x4            // round away from zero
+.no_round\@:
+.endm
+
 _main:
     stp     x29, x30, [sp, #-16]! // prologue
     mov     x29, sp
@@ -134,9 +152,12 @@ _main:
 
 .convert_from_celsius_to_fahrenheit:
     mov     x1, #9
-    mul     x0, x0, x1
+    mul     x2, x0, x1
     mov     x1, #5
-    sdiv    x0, x0, x1
+    sdiv    x0, x2, x1
+
+    round_away_from_zero
+
     add     x0, x0, #32
     cmp     x0, #-459
     blt     .invalid_temp
@@ -145,10 +166,13 @@ _main:
 .convert_from_fahrenheit:
     sub     x0, x0, #32           // convert to Celsius
     mov     x1, #5
-    mul     x0, x0, x1
+    mul     x2, x0, x1
     mov     x1, #9
-    sdiv    x0, x0, x1
-    cmp     x0, #-273
+    sdiv    x0, x2, x1
+
+    round_away_from_zero
+
+    cmp     x0, #-273             // invalid if below absolute zero
     blt     .invalid_temp
     cmp     w7, #'C'              // check if destination is Celsius
     beq     .write_conversion

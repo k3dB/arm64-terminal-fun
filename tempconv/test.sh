@@ -84,3 +84,70 @@ echo ""
 echo "actual"
 echo "31 F -> -1 C"
 echo "expected"
+echo ""
+
+# Celsius ↔ Kelvin anchors
+./bin/tempconv 0 --c-to-k       # 0 C -> 273 K
+echo "actual"
+echo "0 C -> 273 K"
+echo "expected"
+echo ""
+./bin/tempconv 100 --c-to-k     # 100 C -> 373 K
+echo "actual"
+echo "100 C -> 373 K"
+echo "expected"
+echo ""
+./bin/tempconv -273 --c-to-k    # -273 C -> 0 K
+echo "actual"
+echo "-273 C -> 0 K"
+echo "expected"
+echo ""
+
+./bin/tempconv 0 --k-to-c       # 0 K -> -273 C
+echo "actual"
+echo "0 K -> -273 C"
+echo "expected"
+echo ""
+./bin/tempconv 273 --k-to-c     # 273 K -> 0 C
+echo "actual"
+echo "273 K -> 0 C"
+echo "expected"
+echo ""
+./bin/tempconv 274 --k-to-c     # 274 K -> 1 C
+echo "actual"
+echo "274 K -> 1 C"
+echo "expected"
+echo ""
+
+# Fahrenheit ↔ Kelvin anchors
+./bin/tempconv 32 --f-to-k      # 32 F -> 273 K
+echo "actual"
+echo "32 F -> 273 K"
+echo "expected"
+echo ""
+./bin/tempconv 212 --f-to-k     # 212 F -> 373 K
+echo "actual"
+echo "212 F -> 373 K"
+echo "expected"
+echo ""
+./bin/tempconv -40 --f-to-k     # -40 F -> 233 K
+echo "actual"
+echo "-40 F -> 233 K"
+echo "expected"
+echo ""
+
+./bin/tempconv 273 --k-to-f     # 273 K -> 32 F
+echo "actual"
+echo "273 K -> 32 F"
+echo "expected"
+echo ""
+./bin/tempconv 373 --k-to-f     # 373 K -> 212 F
+echo "actual"
+echo "373 K -> 212 F"
+echo "expected"
+echo ""
+./bin/tempconv 233 --k-to-f     # 233 K -> -40 F
+echo "actual"
+echo "233 K -> -40 F"
+echo "expected"
+echo ""

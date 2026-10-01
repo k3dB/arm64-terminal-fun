@@ -7,20 +7,23 @@
 
 .macro round_away_from_zero
     // after sdiv x0, x2, x1
-    // x10 = 10 (for base 10)
-    // x3 - x5 are available scratch registers
+    // x1 is positive (denominator)
+    // x2 is clobbered (numerator)
+    // x3 is the remainder
+    // x4 and x5 are available scratch registers
     // x0 is the result
-    msub    x3, x0, x10, x2       // get the remainder so we can round
-    cmp     x0, #0                // check for negative result
-    cneg    x3, x3, lt            // get absolute value of remainder
+    msub    x3, x0, x1, x2        // get the remainder so we can round
+    eor     x2, x2, x1            // if signs of numerator and denominator are
+    cmp     x2, #0                // different, then the result is negative
     mov     x4, #-1               // set up for rounding away from zero
     mov     x5, #1
     csel    x4, x4, x5, lt
-    lsl     x3, x3, #1            // multiply remainder by 2
-    cmp     x3, x1                // check if remainder * 2 >= denominator
-    blt     .no_round\@
+    cmp     x3, #0
+    cneg    x3, x3, lt            // absolute value of remainder
+    lsl     x3, x3, #1            // double the remainder
+    cmp     x3, x1                // if |r| * 2 >= d, then adjust for rounding
+    csel    x4, x4, xzr, hs       // unsigned comparison
     add     x0, x0, x4            // round away from zero
-.no_round\@:
 .endm
 
 _main:

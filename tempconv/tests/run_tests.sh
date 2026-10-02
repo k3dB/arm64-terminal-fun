@@ -8,6 +8,7 @@ source "$RUNNER_DIR/assertion_helpers.sh"
 . "$RUNNER_DIR/base_tests.sh"
 . "$RUNNER_DIR/rounding_tests.sh"
 . "$RUNNER_DIR/invalid_temp_tests.sh"
+. "$RUNNER_DIR/usage_tests.sh"
 
 echo
 echo "Passed: $TESTS_PASSED"

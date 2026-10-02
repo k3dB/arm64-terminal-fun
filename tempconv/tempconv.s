@@ -232,6 +232,8 @@ _main:
     sub     x2, x9, x1            // calculate buffer length (current - start)
     mov     x16, #4               // macOS syscall: write
     svc     #0x80
+
+    mov     x19, #0               // success
     b       .exit
 
 .invalid_temp:

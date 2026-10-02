@@ -1,8 +1,6 @@
 CURRENT_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TEMPCONV="$CURRENT_TEST_DIR/../bin/tempconv"
 
-source "$CURRENT_TEST_DIR/assertion_helpers.sh"
-
 # Positive values that require rounding
 assert_output "1 C -> 34 F" $TEMPCONV 1 --c-to-f    # 1 C -> 34 F       (33.8)
 assert_output "2 C -> 36 F" $TEMPCONV 2 --c-to-f    # 2 C -> 36 F       (35.6)

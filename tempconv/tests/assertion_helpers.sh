@@ -13,6 +13,7 @@ assert_output() {
 
     # Verify that the command returns success code of 0
     if ! actual_output=$("$@" 2>&1); then
+        ((TESTS_FAILED++))
         echo ""
         echo "${RED}FAILURE:${RESET} Command failed: $*"
         echo "   Output: $actual_output"
@@ -22,8 +23,10 @@ assert_output() {
 
     # Verify that the output matches the expected output
     if [[ "$actual_output" == "$expected_output" ]]; then
+        ((TESTS_PASSED++))
         echo "${GREEN}SUCCESS:${RESET} $*"
     else
+        ((TESTS_FAILED++))
         echo "${RED}FAILURE:${RESET} $*"
         echo "   Expected: $expected_output"
         echo "   Got     : $actual_output"
@@ -51,9 +54,12 @@ assert_cli() {
 
     if [[ "$actual_status" == "$expected_status" &&
           "$actual_output" == "$expected_output" ]]; then
+        ((TESTS_PASSED++))
         echo "${GREEN}SUCCESS:${RESET} $*"
         return 0
     fi
+
+    ((TESTS_FAILED++))
 
     echo "${RED}FAILURE:${RESET} $*"
     echo "   Expected status: $expected_status; got: $actual_status"

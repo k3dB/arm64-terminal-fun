@@ -1,5 +1,14 @@
 RUNNER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+source "$RUNNER_DIR/assertion_helpers.sh"
+
 . "$RUNNER_DIR/base_tests.sh"
 . "$RUNNER_DIR/rounding_tests.sh"
 . "$RUNNER_DIR/invalid_temp_tests.sh"
+
+echo
+echo "Passed: $TESTS_PASSED"
+echo "Failed: $TESTS_FAILED"

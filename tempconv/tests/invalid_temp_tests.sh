@@ -1,5 +1,4 @@
 CURRENT_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-TEMPCONV="$CURRENT_TEST_DIR/../bin/tempconv"
 EXPECTED="Temperature below absolute zero."
 
 source "$CURRENT_TEST_DIR/assertion_helpers.sh"

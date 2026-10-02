@@ -1,8 +1,6 @@
 CURRENT_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 TEMPCONV="$CURRENT_TEST_DIR/../bin/tempconv"
 
-source "$CURRENT_TEST_DIR/assertion_helpers.sh"
-
 # Exact / anchor points
 assert_output "0 C -> 32 F"    $TEMPCONV 0 --c-to-f       # 0 C -> 32 F
 assert_output "100 C -> 212 F" $TEMPCONV 100 --c-to-f     # 100 C -> 212 F

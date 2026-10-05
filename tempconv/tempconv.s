@@ -165,31 +165,42 @@ _main:
 .convert_from_fahrenheit:
     cmp     x0, #-460             // invalid if below absolute zero
     blt     .invalid_temp
+    cmp     w7, #'C'
+    bne     .convert_from_fahrenheit_to_kelvin
+
     sub     x0, x0, #32           // convert to Celsius
     mov     x1, #5
     mul     x2, x0, x1
     mov     x1, #9
     sdiv    x0, x2, x1
-
     round_away_from_zero
+    b       .write_conversion
 
-    cmp     w7, #'C'              // check if destination is Celsius
-    beq     .write_conversion
-    add     x0, x0, #273          // convert to Kelvin
+.convert_from_fahrenheit_to_kelvin:
+    mov     x1, #100              // F * 100 + 45967
+    mov     x2, #45967
+    madd    x2, x0, x1, x2
+    mov     x1, #180              // divide by 180
+    sdiv    x0, x2, x1
+    round_away_from_zero
     b       .write_conversion
 
 .convert_from_kelvin:
     cmp     x0, #0                // invalid if below absolute zero
     blt     .invalid_temp
-    sub     x0, x0, #273          // convert Kelvin to Celsius
     cmp     w7, #'C'
-    beq     .write_conversion
+    bne     .convert_from_kelvin_to_fahrenheit
+    sub     x0, x0, #273          // convert Kelvin to Celsius
+    b       .write_conversion
 
-    mov     x1, #9                // convert to Fahrenheit
+.convert_from_kelvin_to_fahrenheit:
+    mov     x1, #180              // K * 180
     mul     x0, x0, x1
-    mov     x1, #5
-    sdiv    x0, x0, x1
-    add     x0, x0, #32           // already checked for invalid temp
+    mov     x1, #45967            // subtract 45967
+    sub     x2, x0, x1
+    mov     x1, #100              // divide by 100
+    sdiv    x0, x2, x1
+    round_away_from_zero
     b       .write_conversion
 
 .write_conversion:

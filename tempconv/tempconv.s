@@ -148,8 +148,8 @@ _main:
 .convert_from_celsius:
     cmp     w7, #'F'
     beq     .convert_from_celsius_to_fahrenheit
-    sub     x0, x0, #273          // convert Celsius to Kelvin
-    cmp     x0, #-273             // invalid if below absolute zero
+    add     x0, x0, #273          // convert Celsius to Kelvin
+    cmp     x0, #0                // invalid if below absolute zero
     blt     .invalid_temp
     b       .write_conversion
 
@@ -185,7 +185,7 @@ _main:
 .convert_from_kelvin:
     cmp     x0, #0                // invalid if below absolute zero
     blt     .invalid_temp
-    add     x0, x0, #273          // convert Kelvin to Celsius
+    sub     x0, x0, #273          // convert Kelvin to Celsius
     cmp     w7, #'C'
     beq     .write_conversion
 

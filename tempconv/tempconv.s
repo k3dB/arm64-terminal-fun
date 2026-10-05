@@ -81,6 +81,10 @@ _main:
     cmp     w3, #1                // check if negative flag is set
     cneg    x0, x0, eq            // negate if negative
 
+    ldr     x2, =1000000000       // check if temperature is above maximum
+    cmp     x0, x2
+    bgt     .display_usage
+
     // Validate flag argument
     mov     x1, x12
     adrp    x3, conversion_flags@PAGE
@@ -317,7 +321,9 @@ usage:
     .ascii "   --k-to-c    Convert Kelvin to Celsius\n"
     .ascii "   --c-to-k    Convert Celsius to Kelvin\n"
     .ascii "   --k-to-f    Convert Kelvin to Fahrenheit\n"
-    .ascii "   --f-to-k    Convert Fahrenheit to Kelvin\n"
+    .ascii "   --f-to-k    Convert Fahrenheit to Kelvin\n\n"
+    .ascii "   Maximum temperature: 1,000,000,000\n"
+    .ascii "   Use only digits and optional negative sign. No commas or other symbols.\n"
     .set usage_len, . - usage
 
 newline:

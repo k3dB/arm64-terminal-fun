@@ -7,7 +7,10 @@ EXPECTED="Usage: tempconv <temperature> <conversion-flag>
    --k-to-c    Convert Kelvin to Celsius
    --c-to-k    Convert Celsius to Kelvin
    --k-to-f    Convert Kelvin to Fahrenheit
-   --f-to-k    Convert Fahrenheit to Kelvin"
+   --f-to-k    Convert Fahrenheit to Kelvin
+
+   Maximum temperature: 1,000,000,000
+   Use only digits and optional negative sign. No commas or other symbols."
 
 source "$CURRENT_TEST_DIR/assertion_helpers.sh"
 
@@ -37,3 +40,7 @@ assert_cli 1 "$EXPECTED" $TEMPCONV 32.5 --f-to-c
 assert_cli 1 "$EXPECTED" $TEMPCONV 32 --f-to-c bob
 assert_cli 1 "$EXPECTED" $TEMPCONV 212 32 --f-to-c
 assert_cli 1 "$EXPECTED" $TEMPCONV --f-to-c 32 212 bob alice
+
+# Invalid temperatures (above maximum limit)
+assert_cli 1 "$EXPECTED" $TEMPCONV 1000000001 --k-to-c
+assert_cli 1 "$EXPECTED" $TEMPCONV 2000000000 --k-to-f

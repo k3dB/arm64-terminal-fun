@@ -163,7 +163,7 @@ _main:
     b       .write_conversion
 
 .convert_from_fahrenheit:
-    cmp     x0, #-460             // invalid if below absolute zero
+    cmp     x0, #-459             // invalid if below absolute zero
     blt     .invalid_temp
     cmp     w7, #'C'
     bne     .convert_from_fahrenheit_to_kelvin

@@ -1,5 +1,3 @@
-CURRENT_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-
 EXPECTED="Usage: tempconv <temperature> <conversion-flag>
 
    --c-to-f    Convert Celsius to Fahrenheit
@@ -11,8 +9,6 @@ EXPECTED="Usage: tempconv <temperature> <conversion-flag>
 
    Maximum temperature: 1,000,000,000
    Use only digits and optional negative sign. No commas or other symbols."
-
-source "$CURRENT_TEST_DIR/assertion_helpers.sh"
 
 # Correct usage
 assert_cli 0 "32 F -> 0 C" "$TEMPCONV" 32 --f-to-c

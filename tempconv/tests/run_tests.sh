@@ -2,6 +2,7 @@ RUNNER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 TESTS_PASSED=0
 TESTS_FAILED=0
+TEMPCONV="$RUNNER_DIR/../bin/tempconv"
 
 if ! (cd "$RUNNER_DIR/.." && make clean && make); then
     echo "Build failed; tests not run." >&2

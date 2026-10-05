@@ -1,6 +1,3 @@
-CURRENT_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-TEMPCONV="$CURRENT_TEST_DIR/../bin/tempconv"
-
 # Argument order agnostic (other tests will use temperature first)
 assert_output "32 F -> 0 C"    "$TEMPCONV" --f-to-c 32      # 32 F -> 0 C
 assert_output "100 C -> 212 F" "$TEMPCONV" --c-to-f 100     # 100 C -> 212 F

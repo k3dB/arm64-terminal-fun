@@ -1,7 +1,4 @@
-CURRENT_TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 EXPECTED="Temperature below absolute zero."
-
-source "$CURRENT_TEST_DIR/assertion_helpers.sh"
 
 # Temperatures below absolute zero are not valid.
 assert_cli 1 "$EXPECTED" "$TEMPCONV" -1 --k-to-f

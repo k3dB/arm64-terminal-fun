@@ -56,8 +56,10 @@ _main:
 
 .parse_temperature:
     mov     x1, x11
-    ldrb    w2, [x1]              // check for negative sign
-    cmp     w2, #'-'
+    ldrb    w2, [x1]              // check first temperature byte
+    cmp     w2, #0                // check if empty string
+    beq     .display_usage
+    cmp     w2, #'-'              // check if negative
     cinc    x1, x1, eq            // skip negative sign if present
     cset    w3, eq                // set negative flag
 
@@ -78,6 +80,7 @@ _main:
     b       .next_temp_byte
 
 .check_negative:
+    cbz     x4, .display_usage    // no digits parsed
     cmp     w3, #1                // check if negative flag is set
     cneg    x0, x0, eq            // negate if negative
 

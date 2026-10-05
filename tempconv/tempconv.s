@@ -146,11 +146,11 @@ _main:
     b       .display_usage
 
 .convert_from_celsius:
+    cmp     x0, #-273             // invalid if below absolute zero
+    blt     .invalid_temp
     cmp     w7, #'F'
     beq     .convert_from_celsius_to_fahrenheit
     add     x0, x0, #273          // convert Celsius to Kelvin
-    cmp     x0, #0                // invalid if below absolute zero
-    blt     .invalid_temp
     b       .write_conversion
 
 .convert_from_celsius_to_fahrenheit:
@@ -158,15 +158,13 @@ _main:
     mul     x2, x0, x1
     mov     x1, #5
     sdiv    x0, x2, x1
-
     round_away_from_zero
-
     add     x0, x0, #32
-    cmp     x0, #-459
-    blt     .invalid_temp
     b       .write_conversion
 
 .convert_from_fahrenheit:
+    cmp     x0, #-460             // invalid if below absolute zero
+    blt     .invalid_temp
     sub     x0, x0, #32           // convert to Celsius
     mov     x1, #5
     mul     x2, x0, x1
@@ -175,8 +173,6 @@ _main:
 
     round_away_from_zero
 
-    cmp     x0, #-273             // invalid if below absolute zero
-    blt     .invalid_temp
     cmp     w7, #'C'              // check if destination is Celsius
     beq     .write_conversion
     add     x0, x0, #273          // convert to Kelvin

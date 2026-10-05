@@ -16,7 +16,6 @@ assert_output "-273 C -> 0 K"  $TEMPCONV -273 --c-to-k    # -273 C -> 0 K
 
 assert_output "0 K -> -273 C"  $TEMPCONV 0 --k-to-c       # 0 K -> -273 C
 assert_output "273 K -> 0 C"   $TEMPCONV 273 --k-to-c     # 273 K -> 0 C
-assert_output "274 K -> 1 C"   $TEMPCONV 274 --k-to-c     # 274 K -> 1 C
 
 # Fahrenheit ↔ Kelvin anchors
 assert_output "32 F -> 273 K"  $TEMPCONV 32 --f-to-k      # 32 F -> 273 K

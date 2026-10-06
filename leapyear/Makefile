@@ -3,11 +3,11 @@ LD      := ld
 ARCH    := arm64
 SDKROOT := $(shell xcrun --show-sdk-path)
 
-SRC     := leapyear.s
+SRC     := src/leapyear.s
 OBJ     := build/leapyear.o
 BIN     := bin/leapyear
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: $(BIN)
 
@@ -22,3 +22,6 @@ build bin:
 
 clean:
 	rm -rf build bin
+
+test:
+	./test/run_tests.sh

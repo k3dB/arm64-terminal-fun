@@ -5,6 +5,36 @@
 .global _main
 .align 2
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+.set STDOUT,            1
+.set SYS_EXIT,          1
+.set SYS_WRITE,         4
+
+.set MAX_DIGITS,        10           // maximum digits accepted in a temperature
+.set MAX_MAGNITUDE,     1000000000   // maximum absolute value accepted
+.set EXIT_SUCCESS,      0
+.set EXIT_FAILURE,      1
+
+.set ABS_ZERO_C,        273          // absolute zero is -273 C (rounded)
+.set ABS_ZERO_F,        459          // absolute zero is -459 F (rounded)
+.set C_TO_K_OFFSET,     273
+
+// F <-> K without rounding through Celsius: K = (F * 100 + 45967) / 180
+.set FK_OFFSET,         45967
+.set F_TO_K_MUL,        100
+.set FK_DIV,            180
+.set K_TO_F_MUL,        180
+.set K_TO_F_DIV,        100
+
+// Flag strings are all the same shape: "--X-to-Y"
+.set FLAG_SRC_OFFSET,   2
+.set FLAG_DST_OFFSET,   7
+
+// ---------------------------------------------------------------------------
+// Macros
+// ---------------------------------------------------------------------------
 .macro round_away_from_zero
     // after sdiv x0, x2, x1
     // x1 is positive (denominator)
@@ -26,140 +56,287 @@
     add     x0, x0, x4            // round away from zero
 .endm
 
+// Write a static buffer to stdout. Clobbers x0-x2, x16.
+.macro write_const buf, len
+    adrp    x1, \buf\()@PAGE
+    add     x1, x1, \buf\()@PAGEOFF
+    mov     x2, #\len
+    bl      write_stdout
+.endm
+
+// ---------------------------------------------------------------------------
+// main
+// ---------------------------------------------------------------------------
+exit_code   .req x19                // process exit status
+temp_str    .req x20                // temperature argument string
+flag_str    .req x21                // conversion flag argument string
+temp_val    .req x22                // parsed temperature
+src_unit    .req w23                // source unit letter ('C', 'F', 'K')
+dst_unit    .req w24                // destination unit letter
+out_ptr     .req x25                // current write position in output_buffer
+
 _main:
     stp     x29, x30, [sp, #-16]! // prologue
     mov     x29, sp
-    stp     x19, x20, [sp, #-16]! // x19 = return code, x20 = *argv
-    sub     sp, sp, #32           // allocate space for int to ASCII conversion
+    stp     x19, x20, [sp, #-16]!
+    stp     x21, x22, [sp, #-16]!
+    stp     x23, x24, [sp, #-16]!
+    stp     x25, x26, [sp, #-16]!
 
     cmp     x0, #3                // verify exactly two arguments provided
     bne     .display_usage
 
-    mov     x20, x1               // preserve argv pointer
-    ldr     x1, [x1, #8]          // argv[1]
+    ldr     temp_str, [x1, #8]    // assume argv[1] is the temperature
+    ldr     flag_str, [x1, #16]   // and argv[2] is the flag
 
-    // Check if first argument is a temperature or a flag
-    ldrb    w2, [x1]
+    // Check if first argument is a flag (starts with "--") rather than a
+    // temperature
+    ldrb    w2, [temp_str]
     cmp     w2, #'-'
-    bne     .first_arg_is_temperature
-    ldrb    w2, [x1, #1]
+    bne     .args_ordered
+    ldrb    w2, [temp_str, #1]
     cmp     w2, #'-'
-    bne     .first_arg_is_temperature
+    bne     .args_ordered
+    mov     x2, temp_str          // swap: flag first, temperature second
+    mov     temp_str, flag_str
+    mov     flag_str, x2
 
-    ldr     x11, [x20, #16]       // temperature is second argument
-    mov     x12, x1               // flag is first argument
-    b       .parse_temperature
+.args_ordered:
+    mov     x0, temp_str
+    bl      parse_temperature
+    cbnz    x1, .display_usage
+    mov     temp_val, x0
 
-.first_arg_is_temperature:
-    mov     x11, x1               // temperature is first argument
-    ldr     x12, [x20, #16]       // flag is second argument
+    mov     x0, flag_str
+    bl      find_flag
+    cbz     x0, .display_usage
 
-.parse_temperature:
-    mov     x1, x11
-    ldrb    w2, [x1]              // check first temperature byte
-    cmp     w2, #0                // check if empty string
-    beq     .display_usage
+    ldrb    src_unit, [x0, #FLAG_SRC_OFFSET]
+    ldrb    dst_unit, [x0, #FLAG_DST_OFFSET]
+    mov     w8, #0xDF             // uppercase mask
+    and     src_unit, src_unit, w8
+    and     dst_unit, dst_unit, w8
+
+    // Write "<input> <src> -> " to the output buffer
+    adrp    x0, output_buffer@PAGE
+    add     x0, x0, output_buffer@PAGEOFF
+    mov     x1, temp_str
+    mov     w2, src_unit
+    bl      write_prefix
+    mov     out_ptr, x0
+
+    mov     x0, temp_val
+    mov     w1, src_unit
+    mov     w2, dst_unit
+    bl      convert
+    cbnz    x1, .invalid_temp
+
+    mov     x1, out_ptr
+    bl      format_int            // write the converted value
+
+    mov     w2, #' '
+    strb    w2, [x0], #1          // write space
+    strb    dst_unit, [x0], #1    // write destination unit
+
+    adrp    x1, output_buffer@PAGE
+    add     x1, x1, output_buffer@PAGEOFF
+    sub     x2, x0, x1            // calculate buffer length (current - start)
+    bl      write_stdout
+
+    mov     exit_code, #EXIT_SUCCESS
+    b       .exit
+
+.invalid_temp:
+    write_const invalid_msg, invalid_msg_len
+    mov     exit_code, #EXIT_FAILURE
+    b       .exit
+
+.display_usage:
+    write_const usage, usage_len
+    mov     exit_code, #EXIT_FAILURE
+
+.exit:
+    write_const newline, newline_len
+
+    mov     x0, exit_code         // return success/failure
+
+    ldp     x25, x26, [sp], #16   // epilogue
+    ldp     x23, x24, [sp], #16
+    ldp     x21, x22, [sp], #16
+    ldp     x19, x20, [sp], #16
+    ldp     x29, x30, [sp], #16
+
+    mov     x16, #SYS_EXIT
+    svc     #0x80
+
+.unreq exit_code
+.unreq temp_str
+.unreq flag_str
+.unreq temp_val
+.unreq src_unit
+.unreq dst_unit
+.unreq out_ptr
+
+// ---------------------------------------------------------------------------
+// write_stdout
+//   in:      x1 = buffer address, x2 = byte count
+//   clobbers x0, x16
+// ---------------------------------------------------------------------------
+write_stdout:
+    mov     x0, #STDOUT
+    mov     x16, #SYS_WRITE
+    svc     #0x80
+    ret
+
+// ---------------------------------------------------------------------------
+// parse_temperature
+//   in:     x0 = NUL-terminated string: optional '-', then 1..MAX_DIGITS digits
+//   out:    x0 = signed value, x1 = 0 on success or 1 if invalid
+//   clobbers x2-x5
+// ---------------------------------------------------------------------------
+parse_temperature:
+    ldrb    w2, [x0]              // check first temperature byte
+    cbz     w2, .parse_invalid    // empty string
     cmp     w2, #'-'              // check if negative
-    cinc    x1, x1, eq            // skip negative sign if present
+    cinc    x1, x0, eq            // skip negative sign if present
     cset    w3, eq                // set negative flag
 
     mov     x0, #0                // result of converting string to integer
-    mov     x4, #0                // argument index
-    mov     x10, #10              // base 10 (both input here and output later)
+    mov     x4, #0                // digit count / index
+    mov     x5, #10               // base 10
 
-.next_temp_byte:
+.parse_next_byte:
     ldrb    w2, [x1, x4]          // read next byte
-    cbz     w2, .check_negative   // more temperature bytes?
+    cbz     w2, .parse_check_value // more temperature bytes?
     add     x4, x4, #1            // advance pointer
 
     sub     w2, w2, #'0'          // convert ASCII to digit
     cmp     w2, #9                // check if valid digit
-    bhi     .display_usage        // unsigned: character was not '0'..'9'
-    cmp     x4, #10               // limit input to the maximum number of digits
-    bhi     .display_usage
+    bhi     .parse_invalid        // unsigned: character was not '0'..'9'
+    cmp     x4, #MAX_DIGITS       // limit input to the maximum number of digits
+    bhi     .parse_invalid
 
-    madd    x0, x0, x10, x2       // result = result * 10 + digit
-    b       .next_temp_byte
+    madd    x0, x0, x5, x2        // result = result * 10 + digit
+    b       .parse_next_byte
 
-.check_negative:
-    cbz     x4, .display_usage    // no digits parsed
-    ldr     x2, =1000000000       // check the magnitude against the maximum
+.parse_check_value:
+    cbz     x4, .parse_invalid    // no digits parsed
+    ldr     x2, =MAX_MAGNITUDE    // check the magnitude against the maximum
     cmp     x0, x2
-    bgt     .display_usage
+    bgt     .parse_invalid
     cmp     w3, #1                // check if negative flag is set
     cneg    x0, x0, eq            // negate if negative
+    mov     x1, #0
+    ret
 
-    // Validate flag argument
-    mov     x1, x12
+.parse_invalid:
+    mov     x1, #1
+    ret
+
+// ---------------------------------------------------------------------------
+// find_flag
+//   in:      x0 = NUL-terminated flag argument
+//   out:     x0 = matching entry in conversion_flags, or 0 if not found
+//   clobbers x1-x7
+// ---------------------------------------------------------------------------
+find_flag:
+    mov     x1, x0
     adrp    x3, conversion_flags@PAGE
     add     x3, x3, conversion_flags@PAGEOFF
     mov     x4, #0                // conversion flag index
 
-.next_flag:
+.find_next_flag:
     ldr     x5, [x3, x4, lsl #3]  // get current flag pointer
-    cbz     x5, .display_usage    // conversion flag not found
+    cbz     x5, .find_not_found   // conversion flag not found
     add     x4, x4, #1            // advance flag index for next iteration
     mov     x6, #0                // reset flag argument index
 
-.next_flag_byte:
+.find_next_flag_byte:
     ldrb    w2, [x1, x6]          // get next input flag byte
-    cbz     w2, .check_flag_found // end of input flag?
+    cbz     w2, .find_end_of_input // end of input flag?
     ldrb    w7, [x5, x6]          // get next candidate flag byte
-    cbz     w7, .display_usage    // invalid: all flags are the same length
+    cbz     w7, .find_not_found   // invalid: all flags are the same length
     cmp     w2, w7
-    bne     .next_flag
+    bne     .find_next_flag
     add     x6, x6, #1
-    b       .next_flag_byte
+    b       .find_next_flag_byte
 
-.check_flag_found:
+.find_end_of_input:
     ldrb    w7, [x5, x6]          // make sure flag argument is not too long
-    cbnz    w7, .display_usage    // invalid: all flags are the same length
+    cbnz    w7, .find_not_found   // invalid: all flags are the same length
+    mov     x0, x5
+    ret
 
-    // Pick conversion based on known flag letter positions
-    ldrb    w6, [x5, #2]          // source unit
-    ldrb    w7, [x5, #7]          // destination unit
-    mov     w8, #0xDF             // uppercase mask
-    and     w6, w6, w8            // convert source to uppercase
-    and     w7, w7, w8            // convert destination to uppercase
+.find_not_found:
+    mov     x0, #0
+    ret
 
-    // Write input temperature to output buffer
-    adrp    x9, output_buffer@PAGE
-    add     x9, x9, output_buffer@PAGEOFF
+// ---------------------------------------------------------------------------
+// write_prefix: writes "<temperature> <src> -> " to the output buffer
+//   in:      x0 = output pointer, x1 = temperature string, w2 = source unit
+//   out:     x0 = output pointer after the written text
+//   clobbers x1, x3
+// ---------------------------------------------------------------------------
+write_prefix:
+.prefix_copy_byte:
+    ldrb    w3, [x1], #1          // source
+    cbz     w3, .prefix_write_unit
+    strb    w3, [x0], #1          // destination
+    b       .prefix_copy_byte
 
-.next_temp_copy_byte:
-    ldrb    w2, [x11], #1         // source
-    strb    w2, [x9], #1          // destination
-    cbnz    w2, .next_temp_copy_byte
+.prefix_write_unit:
+    mov     w3, #' '
+    strb    w3, [x0], #1          // write space
+    strb    w2, [x0], #1          // write source temperature unit
+    strb    w3, [x0], #1          // write space
+    mov     w3, #'-'
+    strb    w3, [x0], #1          // write arrow to buffer
+    mov     w3, #'>'
+    strb    w3, [x0], #1
+    mov     w3, #' '
+    strb    w3, [x0], #1          // write space
+    ret
 
-    mov     w2, #' '
-    sub     x9, x9, #1            // backup to overwrite null terminator
-    strb    w2, [x9], #1          // write space
-
-    strb    w6, [x9], #1          // write source temperature unit
-    mov     w2, #' '
-    strb    w2, [x9], #1          // write space
-    mov     w2, #'-'
-    strb    w2, [x9], #1          // write arrow to buffer
-    mov     w2, #'>'
-    strb    w2, [x9], #1
-    mov     w2, #' '
-    strb    w2, [x9], #1          // write space
-
-    cmp     w6, #'C'              // determine source temperature unit
+// ---------------------------------------------------------------------------
+// convert
+//   in:      x0 = temperature, w1 = source unit, w2 = destination unit
+//            (units are uppercase 'C', 'F' or 'K'; source != destination)
+//   out:     x0 = converted temperature
+//            x1 = 0 on success, 1 if the input is below absolute zero
+//   clobbers x1-x6
+// ---------------------------------------------------------------------------
+convert:
+    mov     w6, w2                // destination unit (x1 is used as a scratch)
+    cmp     w1, #'C'
     beq     .convert_from_celsius
-    cmp     w6, #'F'
+    cmp     w1, #'F'
     beq     .convert_from_fahrenheit
-    cmp     w6, #'K'
-    beq     .convert_from_kelvin
-    b       .display_usage
+
+.convert_from_kelvin:
+    cmp     x0, #0                // invalid if below absolute zero
+    blt     .convert_below_zero
+    cmp     w6, #'C'
+    bne     .convert_from_kelvin_to_fahrenheit
+    sub     x0, x0, #C_TO_K_OFFSET // convert Kelvin to Celsius
+    b       .convert_ok
+
+.convert_from_kelvin_to_fahrenheit:
+    mov     x1, #K_TO_F_MUL       // K * 180
+    mul     x0, x0, x1
+    mov     x1, #FK_OFFSET        // subtract 45967
+    sub     x2, x0, x1
+    mov     x1, #K_TO_F_DIV       // divide by 100
+    sdiv    x0, x2, x1
+    round_away_from_zero
+    b       .convert_ok
 
 .convert_from_celsius:
-    cmp     x0, #-273             // invalid if below absolute zero
-    blt     .invalid_temp
-    cmp     w7, #'F'
+    cmp     x0, #-ABS_ZERO_C      // invalid if below absolute zero
+    blt     .convert_below_zero
+    cmp     w6, #'F'
     beq     .convert_from_celsius_to_fahrenheit
-    add     x0, x0, #273          // convert Celsius to Kelvin
-    b       .write_conversion
+    add     x0, x0, #C_TO_K_OFFSET // convert Celsius to Kelvin
+    b       .convert_ok
 
 .convert_from_celsius_to_fahrenheit:
     mov     x1, #9
@@ -168,12 +345,12 @@ _main:
     sdiv    x0, x2, x1
     round_away_from_zero
     add     x0, x0, #32
-    b       .write_conversion
+    b       .convert_ok
 
 .convert_from_fahrenheit:
-    cmp     x0, #-459             // invalid if below absolute zero
-    blt     .invalid_temp
-    cmp     w7, #'C'
+    cmp     x0, #-ABS_ZERO_F      // invalid if below absolute zero
+    blt     .convert_below_zero
+    cmp     w6, #'C'
     bne     .convert_from_fahrenheit_to_kelvin
 
     sub     x0, x0, #32           // convert to Celsius
@@ -182,113 +359,60 @@ _main:
     mov     x1, #9
     sdiv    x0, x2, x1
     round_away_from_zero
-    b       .write_conversion
+    b       .convert_ok
 
 .convert_from_fahrenheit_to_kelvin:
-    mov     x1, #100              // F * 100 + 45967
-    mov     x2, #45967
+    mov     x1, #F_TO_K_MUL       // F * 100 + 45967
+    mov     x2, #FK_OFFSET
     madd    x2, x0, x1, x2
-    mov     x1, #180              // divide by 180
+    mov     x1, #FK_DIV           // divide by 180
     sdiv    x0, x2, x1
     round_away_from_zero
-    b       .write_conversion
 
-.convert_from_kelvin:
-    cmp     x0, #0                // invalid if below absolute zero
-    blt     .invalid_temp
-    cmp     w7, #'C'
-    bne     .convert_from_kelvin_to_fahrenheit
-    sub     x0, x0, #273          // convert Kelvin to Celsius
-    b       .write_conversion
+.convert_ok:
+    mov     x1, #0
+    ret
 
-.convert_from_kelvin_to_fahrenheit:
-    mov     x1, #180              // K * 180
-    mul     x0, x0, x1
-    mov     x1, #45967            // subtract 45967
-    sub     x2, x0, x1
-    mov     x1, #100              // divide by 100
-    sdiv    x0, x2, x1
-    round_away_from_zero
-    b       .write_conversion
+.convert_below_zero:
+    mov     x1, #1
+    ret
 
-.write_conversion:
+// ---------------------------------------------------------------------------
+// format_int: writes a signed integer as decimal ASCII
+//   in:      x0 = value, x1 = output pointer
+//   out:     x0 = output pointer after the written digits
+//   clobbers x1-x5
+// ---------------------------------------------------------------------------
+format_int:
+    sub     sp, sp, #32           // allocate space for int to ASCII conversion
     cmp     x0, #0
-    bge     .positive_temp
+    bge     .format_positive
     mov     w2, #'-'
-    strb    w2, [x9], #1
+    strb    w2, [x1], #1
     neg     x0, x0
 
-.positive_temp:
-    mov     x1, #0                // digit index
+.format_positive:
+    mov     x3, #10               // base 10
+    mov     x4, #0                // digit index
 
-.next_digit:
-    udiv    x2, x0, x10           // convert conversion to ASCII on the stack
-    msub    x3, x2, x10, x0
-    add     x3, x3, #'0'          // convert remainder to ASCII
-    strb    w3, [sp, x1]
-    add     x1, x1, #1
+.format_next_digit:
+    udiv    x2, x0, x3            // convert conversion to ASCII on the stack
+    msub    x5, x2, x3, x0
+    add     x5, x5, #'0'          // convert remainder to ASCII
+    strb    w5, [sp, x4]
+    add     x4, x4, #1
     mov     x0, x2                // remaining digits in conversion result
-    cbnz    x2, .next_digit
+    cbnz    x2, .format_next_digit
 
-.next_digit_copy:
-    sub     x1, x1, #1            // rewinding the stack, write the conversion
-    ldrb    w2, [sp, x1]          // result to the output buffer
-    strb    w2, [x9], #1
-    cbnz    x1, .next_digit_copy
+.format_next_digit_copy:
+    sub     x4, x4, #1            // rewinding the stack, write the conversion
+    ldrb    w2, [sp, x4]          // result to the output buffer
+    strb    w2, [x1], #1
+    cbnz    x4, .format_next_digit_copy
 
-    mov     w2, #' '
-    strb    w2, [x9], #1          // write space
-    strb    w7, [x9], #1          // write destination unit
-
-    // Write the buffer to stdout
-    mov     x0, #1                // stdout
-    adrp    x1, output_buffer@PAGE
-    add     x1, x1, output_buffer@PAGEOFF
-    sub     x2, x9, x1            // calculate buffer length (current - start)
-    mov     x16, #4               // macOS syscall: write
-    svc     #0x80
-
-    mov     x19, #0               // success
-    b       .exit
-
-.invalid_temp:
-    mov     x0, #1                // stdout
-    adrp    x1, invalid_msg@PAGE  // buffer address
-    add     x1, x1, invalid_msg@PAGEOFF
-    mov     x2, #invalid_msg_len  // byte count
-    mov     x16, #4               // macOS syscall: write
-    svc     #0x80
-
-    mov     x19, #1               // failure
-    b       .exit
-
-.display_usage:
-    mov     x0, #1                // stdout
-    adrp    x1, usage@PAGE        // buffer address
-    add     x1, x1, usage@PAGEOFF
-    mov     x2, #usage_len        // byte count
-    mov     x16, #4               // macOS syscall: write
-    svc     #0x80
-
-    mov     x19, #1               // failure
-
-.exit:
-    // Write newline before exiting
-    mov     x0, #1                // stdout
-    adrp    x1, newline@PAGE      // buffer address
-    add     x1, x1, newline@PAGEOFF
-    mov     x2, #newline_len      // byte count
-    mov     x16, #4               // macOS syscall: write
-    svc     #0x80
-
-    mov     x0, x19               // return success/failure
-
+    mov     x0, x1
     add     sp, sp, #32           // free allocated stack space
-    ldp     x19, x20, [sp], #16   // epilogue
-    ldp     x29, x30, [sp], #16
-
-    mov     x16, #1               // macOS syscall: exit
-    svc     #0x80
+    ret
 
 .section __TEXT, __cstring, cstring_literals
 

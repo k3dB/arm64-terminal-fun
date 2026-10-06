@@ -12,7 +12,6 @@
 // parse_temperature
 //   in:     x0 = NUL-terminated string: optional '-', then 1..MAX_DIGITS digits
 //   out:    x0 = signed value, x1 = 0 on success or 1 if invalid
-//   clobbers x2-x5
 // ---------------------------------------------------------------------------
 parse_temperature:
     ldrb    w2, [x0]              // check first temperature byte
@@ -57,7 +56,6 @@ parse_temperature:
 // find_flag
 //   in:      x0 = NUL-terminated flag argument
 //   out:     x0 = matching entry in conversion_flags, or 0 if not found
-//   clobbers x1-x7
 // ---------------------------------------------------------------------------
 find_flag:
     mov     x1, x0

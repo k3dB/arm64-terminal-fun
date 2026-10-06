@@ -20,11 +20,10 @@
 
 // ---------------------------------------------------------------------------
 // convert
-//   in:      x0 = temperature, w1 = source unit, w2 = destination unit
-//            (units are uppercase 'C', 'F' or 'K'; source != destination)
-//   out:     x0 = converted temperature
-//            x1 = 0 on success, 1 if the input is below absolute zero
-//   clobbers x1-x6
+//   in:    x0 = temperature, w1 = source unit, w2 = destination unit
+//          (units are uppercase 'C', 'F' or 'K'; source != destination)
+//   out:   x0 = converted temperature
+//          x1 = 0 on success, 1 if the input is below absolute zero
 // ---------------------------------------------------------------------------
 convert:
     mov     w6, w2                // destination unit (x1 is used as a scratch)

@@ -18,13 +18,13 @@
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
-exit_code   .req x19                // process exit status
-temp_str    .req x20                // temperature argument string
-flag_str    .req x21                // conversion flag argument string
-temp_val    .req x22                // parsed temperature
-src_unit    .req w23                // source unit letter ('C', 'F', 'K')
-dst_unit    .req w24                // destination unit letter
-out_ptr     .req x25                // current write position in output_buffer
+exit_code   .req x19              // process exit status
+temp_str    .req x20              // temperature argument string
+flag_str    .req x21              // conversion flag argument string
+temp_val    .req x22              // parsed temperature
+src_unit    .req w23              // source unit letter ('C', 'F', 'K')
+dst_unit    .req w24              // destination unit letter
+out_ptr     .req x25              // current write position in output_buffer
 
 _main:
     stp     x29, x30, [sp, #-16]! // prologue

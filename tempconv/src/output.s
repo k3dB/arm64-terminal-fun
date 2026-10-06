@@ -10,8 +10,7 @@
 
 // ---------------------------------------------------------------------------
 // write_stdout
-//   in:      x1 = buffer address, x2 = byte count
-//   clobbers x0, x16
+//   in:    x1 = buffer address, x2 = byte count
 // ---------------------------------------------------------------------------
 write_stdout:
     mov     x0, #STDOUT
@@ -21,9 +20,8 @@ write_stdout:
 
 // ---------------------------------------------------------------------------
 // write_prefix: writes "<temperature> <src> -> " to the output buffer
-//   in:      x0 = output pointer, x1 = temperature string, w2 = source unit
-//   out:     x0 = output pointer after the written text
-//   clobbers x1, x3
+//   in:    x0 = output pointer, x1 = temperature string, w2 = source unit
+//   out:   x0 = output pointer after the written text
 // ---------------------------------------------------------------------------
 write_prefix:
 .prefix_copy_byte:
@@ -47,9 +45,8 @@ write_prefix:
 
 // ---------------------------------------------------------------------------
 // format_int: writes a signed integer as decimal ASCII
-//   in:      x0 = value, x1 = output pointer
-//   out:     x0 = output pointer after the written digits
-//   clobbers x1-x5
+//   in:    x0 = value, x1 = output pointer
+//   out:   x0 = output pointer after the written digits
 // ---------------------------------------------------------------------------
 format_int:
     sub     sp, sp, #32           // allocate space for int to ASCII conversion

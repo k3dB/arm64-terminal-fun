@@ -231,8 +231,8 @@ _main:
     cbnz    x2, .next_digit
 
 .next_digit_copy:
-    sub     x1, x1, #1            // rewindinding the stack, write the
-    ldrb    w2, [sp, x1]          // conversion result to the output buffer
+    sub     x1, x1, #1            // rewinding the stack, write the conversion
+    ldrb    w2, [sp, x1]          // result to the output buffer
     strb    w2, [x9], #1
     cbnz    x1, .next_digit_copy
 

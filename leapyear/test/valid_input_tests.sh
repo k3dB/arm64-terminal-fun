@@ -26,3 +26,13 @@ assert_output "65535 is not a leap year." "$LEAPYEAR" 65535
 # Near upper bound
 assert_output "65532 is a leap year."     "$LEAPYEAR" 65532
 assert_output "65534 is not a leap year." "$LEAPYEAR" 65534
+
+# Ignores leading zeros
+assert_output "2028 is a leap year."     "$LEAPYEAR" 02028
+assert_output "2000 is a leap year."     "$LEAPYEAR" 002000
+assert_output "4 is a leap year."        "$LEAPYEAR" 00004
+assert_output "2004 is a leap year."     "$LEAPYEAR" 00000002004
+assert_output "2027 is not a leap year." "$LEAPYEAR" 02027
+assert_output "2005 is not a leap year." "$LEAPYEAR" 002005
+assert_output "5 is not a leap year."    "$LEAPYEAR" 00005
+assert_output "2009 is not a leap year." "$LEAPYEAR" 00000002009

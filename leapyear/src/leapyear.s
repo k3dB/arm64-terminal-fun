@@ -19,6 +19,7 @@ _main:
     mov     x0, #0                // convert argv[1] to integer
     mov     x3, #10               // base 10
     mov     x4, #0                // digit counter for argv[1] length
+    mov     x6, #0                // count leading zeros
 
 .next_byte:
     ldrb    w2, [x1], #1          // read next byte, advance pointer
@@ -29,15 +30,15 @@ _main:
     bhi     .display_usage        // unsigned: character was not '0'..'9'
 
     madd    x0, x0, x3, x2        // result = result * 10 + digit
-    add     x4, x4, #1            // increment digit counter
+    lsr     x5, x0, #16           // check if year is still within 16-bit range
+    cbnz    x5, .display_usage
+    cmp     x0, #0
+    cinc    x6, x6, eq            // count leading zeros
+    cinc    x4, x4, ne            // count non-leading-zero digits
     b       .next_byte
 
 .validate:
-    cmp     x4, #5                // poor man's check for overflow
-    bhi     .display_usage        // more digits than upper bound?
     cbz     x0, .display_usage    // if year is 0, display usage
-    lsr     x1, x0, #16           // check if year is within 16-bit range
-    cbnz    x1, .display_usage
 
 // Test if the year is a leap year. A year is a leap year if:
 // 1. It is divisible by 4
@@ -64,7 +65,8 @@ _main:
 .print_year:
     mov     x0, #1                // stdout
     ldr     x1, [x20, #8]         // argv[1]
-    mov     x2, x4                // length of argv[1]
+    add     x1, x1, x6            // skip leading zeros
+    mov     x2, x4                // number of non-leading-zero digits
     mov     x16, #4               // macOS syscall: write
     svc     #0x80
 

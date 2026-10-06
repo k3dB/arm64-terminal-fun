@@ -64,9 +64,9 @@ _main:
 
     ldrb    src_unit, [x0, #FLAG_SRC_OFFSET]
     ldrb    dst_unit, [x0, #FLAG_DST_OFFSET]
-    mov     w8, #0xDF             // uppercase mask
-    and     src_unit, src_unit, w8
-    and     dst_unit, dst_unit, w8
+    mov     w1, #0xDF             // uppercase mask
+    and     src_unit, src_unit, w1
+    and     dst_unit, dst_unit, w1
 
     // Write "<input> <src> -> " to the output buffer
     adrp    x0, output_buffer@PAGE

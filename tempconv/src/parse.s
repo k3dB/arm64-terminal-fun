@@ -5,13 +5,13 @@
 
 .global parse_temperature, find_flag
 
-.set MAX_DIGITS,        10           // maximum digits accepted in a temperature
-.set MAX_MAGNITUDE,     1000000000   // maximum absolute value accepted
+.set MAX_DIGITS,            10    // maximum digits accepted in a temperature
+.set MAX_MAGNITUDE, 1000000000    // maximum absolute value accepted
 
 // ---------------------------------------------------------------------------
 // parse_temperature
-//   in:     x0 = NUL-terminated string: optional '-', then 1..MAX_DIGITS digits
-//   out:    x0 = signed value, x1 = 0 on success or 1 if invalid
+//   in:    x0 = NUL-terminated string: optional '-', then 1..MAX_DIGITS digits
+//   out:   x0 = signed value, x1 = 0 on success or 1 if invalid
 // ---------------------------------------------------------------------------
 parse_temperature:
     ldrb    w2, [x0]              // check first temperature byte
@@ -54,34 +54,33 @@ parse_temperature:
 
 // ---------------------------------------------------------------------------
 // find_flag
-//   in:      x0 = NUL-terminated flag argument
-//   out:     x0 = matching entry in conversion_flags, or 0 if not found
+//   in:    x0 = NUL-terminated flag argument
+//   out:   x0 = matching entry in conversion_flags, or 0 if not found
 // ---------------------------------------------------------------------------
 find_flag:
-    mov     x1, x0
-    adrp    x3, conversion_flags@PAGE
-    add     x3, x3, conversion_flags@PAGEOFF
-    mov     x4, #0                // conversion flag index
+    adrp    x1, conversion_flags@PAGE
+    add     x1, x1, conversion_flags@PAGEOFF
+    mov     x3, #0                 // conversion flag index
 
 .find_next_flag:
-    ldr     x5, [x3, x4, lsl #3]  // get current flag pointer
-    cbz     x5, .find_not_found   // conversion flag not found
-    add     x4, x4, #1            // advance flag index for next iteration
-    mov     x6, #0                // reset flag argument index
+    ldr     x5, [x1, x3, lsl #3]   // get current flag pointer
+    cbz     x5, .find_not_found    // conversion flag not found
+    add     x3, x3, #1             // advance flag index for next iteration
+    mov     x4, #0                 // reset flag argument index
 
 .find_next_flag_byte:
-    ldrb    w2, [x1, x6]          // get next input flag byte
+    ldrb    w2, [x0, x4]           // get next input flag byte
     cbz     w2, .find_end_of_input // end of input flag?
-    ldrb    w7, [x5, x6]          // get next candidate flag byte
-    cbz     w7, .find_not_found   // invalid: all flags are the same length
-    cmp     w2, w7
+    ldrb    w6, [x5, x4]           // get next candidate flag byte
+    cbz     w6, .find_not_found    // invalid: all flags are the same length
+    cmp     w2, w6
     bne     .find_next_flag
-    add     x6, x6, #1
+    add     x4, x4, #1
     b       .find_next_flag_byte
 
 .find_end_of_input:
-    ldrb    w7, [x5, x6]          // make sure flag argument is not too long
-    cbnz    w7, .find_not_found   // invalid: all flags are the same length
+    ldrb    w6, [x5, x4]           // make sure flag argument is not too long
+    cbnz    w6, .find_not_found    // invalid: all flags are the same length
     mov     x0, x5
     ret
 

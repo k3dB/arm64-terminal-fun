@@ -42,3 +42,7 @@ assert_cli 1 "$EXPECTED" "$TEMPCONV" --f-to-c 32 212 bob alice
 # Invalid temperatures (above maximum limit)
 assert_cli 1 "$EXPECTED" "$TEMPCONV" 1000000001 --k-to-c
 assert_cli 1 "$EXPECTED" "$TEMPCONV" 2000000000 --k-to-f
+assert_cli 1 "$EXPECTED" "$TEMPCONV" -1000000001 --c-to-k
+assert_cli 1 "$EXPECTED" "$TEMPCONV" 18446744073709551616 --k-to-c
+assert_cli 1 "$EXPECTED" "$TEMPCONV" 00000000000 --c-to-k
+assert_output "1000000000 C -> 1000000273 K" "$TEMPCONV" 1000000000 --c-to-k

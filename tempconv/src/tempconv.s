@@ -75,18 +75,19 @@ _main:
     sub     w2, w2, #'0'          // convert ASCII to digit
     cmp     w2, #9                // check if valid digit
     bhi     .display_usage        // unsigned: character was not '0'..'9'
+    cmp     x4, #10               // limit input to the maximum number of digits
+    bhi     .display_usage
 
     madd    x0, x0, x10, x2       // result = result * 10 + digit
     b       .next_temp_byte
 
 .check_negative:
     cbz     x4, .display_usage    // no digits parsed
-    cmp     w3, #1                // check if negative flag is set
-    cneg    x0, x0, eq            // negate if negative
-
-    ldr     x2, =1000000000       // check if temperature is above maximum
+    ldr     x2, =1000000000       // check the magnitude against the maximum
     cmp     x0, x2
     bgt     .display_usage
+    cmp     w3, #1                // check if negative flag is set
+    cneg    x0, x0, eq            // negate if negative
 
     // Validate flag argument
     mov     x1, x12

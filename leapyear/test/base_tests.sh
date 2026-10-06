@@ -22,3 +22,7 @@ assert_output "100 is not a leap year."  "$LEAPYEAR"  100
 
 # Maximum 16-bit unsigned integer
 assert_output "65535 is not a leap year." "$LEAPYEAR" 65535
+
+# Near upper bound
+assert_output "65532 is a leap year."     "$LEAPYEAR" 65532
+assert_output "65534 is not a leap year." "$LEAPYEAR" 65534

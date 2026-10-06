@@ -33,6 +33,8 @@ _main:
     b       .next_byte
 
 .validate:
+    cmp     x4, #5                // poor man's check for overflow
+    bhi     .display_usage        // more digits than upper bound?
     cbz     x0, .display_usage    // if year is 0, display usage
     lsr     x1, x0, #16           // check if year is within 16-bit range
     cbnz    x1, .display_usage

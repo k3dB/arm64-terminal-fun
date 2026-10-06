@@ -27,3 +27,12 @@ assert_cli 1 "$EXPECTED" "$LEAPYEAR" -400
 assert_cli 1 "$EXPECTED" "$LEAPYEAR" 66000
 assert_cli 1 "$EXPECTED" "$LEAPYEAR" 65536
 assert_cli 1 "$EXPECTED" "$LEAPYEAR" 65537
+
+# Malformed input
+assert_cli 1 "$EXPECTED" "$LEAPYEAR" 4x
+assert_cli 1 "$EXPECTED" "$LEAPYEAR" +4
+assert_cli 1 "$EXPECTED" "$LEAPYEAR" " 4"
+assert_cli 1 "$EXPECTED" "$LEAPYEAR" "4 "
+
+# Overflow
+assert_cli 1 "$EXPECTED" "$LEAPYEAR" 18446744073709551620

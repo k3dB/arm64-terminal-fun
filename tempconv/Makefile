@@ -3,19 +3,20 @@ LD      := ld
 ARCH    := arm64
 SDKROOT := $(shell xcrun --show-sdk-path)
 
-SRC     := src/tempconv.s
-OBJ     := build/tempconv.o
+SRCS    := $(wildcard src/*.s)
+INCS    := $(wildcard src/*.inc)
+OBJS    := $(patsubst src/%.s,build/%.o,$(SRCS))
 BIN     := bin/tempconv
 
 .PHONY: all clean test
 
 all: $(BIN)
 
-$(BIN): $(OBJ) | bin
-	$(LD) -o $@ -lSystem -syslibroot "$(SDKROOT)" -e _main -arch $(ARCH) $<
+$(BIN): $(OBJS) | bin
+	$(LD) -o $@ -lSystem -syslibroot "$(SDKROOT)" -e _main -arch $(ARCH) $^
 
-$(OBJ): $(SRC) | build
-	$(AS) -arch $(ARCH) -o $@ $<
+build/%.o: src/%.s $(INCS) | build
+	$(AS) -arch $(ARCH) -I src -o $@ $<
 
 build bin:
 	mkdir -p $@

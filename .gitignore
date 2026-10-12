@@ -1,4 +1,12 @@
+# Build artifacts
 build
 bin
 
 *.o
+
+# IDE folders
+.idea
+.vscode
+
+# macOS
+.DS_Store

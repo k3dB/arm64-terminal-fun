@@ -7,7 +7,6 @@
 
 _main:
     stp     x29, x30, [sp, #-16]! // prologue
-    mov     x29, sp
     stp     x19, x20, [sp, #-16]! // x19 = return code, x20 = *argv
 
     cmp     x0, #2                // verify exactly one argument provided

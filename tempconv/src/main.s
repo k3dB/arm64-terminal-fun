@@ -28,7 +28,6 @@ out_ptr     .req x25              // current write position in output_buffer
 
 _main:
     stp     x29, x30, [sp, #-16]! // prologue
-    mov     x29, sp
     stp     x19, x20, [sp, #-16]!
     stp     x21, x22, [sp, #-16]!
     stp     x23, x24, [sp, #-16]!

@@ -28,24 +28,28 @@ _main:
     cmp     w2, #9                // check if valid digit
     bhi     .display_usage        // unsigned: character was not '0'..'9'
 
-    madd    x0, x0, x3, x2        // result = result * 10 + digit
-    lsr     x5, x0, #64           // check if still within 64-bit range
-    cbnz    x5, .display_usage
+    mov     x7, x0
+    mul     x0, x7, x3            // low 64 bits of n * 10
+    umulh   x5, x7, x3            // high 64 bits of n * 10
+    cbnz    x5, .display_usage    // multiplication overflowed
+
+    adds    x0, x0, x2            // add digit and set carry
+    bcs     .display_usage        // addition overflowed
+
     cmp     x0, #0
     cinc    x6, x6, eq            // count leading zeros
     cinc    x4, x4, ne            // count non-leading-zero digits
     b       .next_byte
 
 .validate:
-// Test if the number is prime. A number is prime if:
-// 1. It is greater than 1
-// 2. It has no divisors other than 1 and itself
+    cbz     x4, .display_usage    // no digits provided
+
     cmp     x0, #2
-    blt     .not_prime
-    beq     .is_prime
+    blt     .not_prime            // 0 and 1 are not prime
+    beq     .is_prime             // 2 is prime
 
     and     x1, x0, #1            // number even?
-    cbz     x1, .not_prime
+    cbz     x1, .not_prime        // even numbers > 2 are not prime
 
 .is_prime:
     mov     x5, #1

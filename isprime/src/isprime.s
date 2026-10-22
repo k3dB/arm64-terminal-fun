@@ -1,4 +1,4 @@
-// leapyear.s — ARM64v8 assembly for macOS
+// isprime.s — ARM64v8 assembly for macOS
 
 .section __TEXT, __text, regular, pure_instructions
 
@@ -29,7 +29,7 @@ _main:
     bhi     .display_usage        // unsigned: character was not '0'..'9'
 
     madd    x0, x0, x3, x2        // result = result * 10 + digit
-    lsr     x5, x0, #16           // check if year is still within 16-bit range
+    lsr     x5, x0, #64           // check if still within 64-bit range
     cbnz    x5, .display_usage
     cmp     x0, #0
     cinc    x6, x6, eq            // count leading zeros
@@ -37,31 +37,25 @@ _main:
     b       .next_byte
 
 .validate:
-    cbz     x0, .display_usage    // if year is 0, display usage
+// Test if the number is prime. A number is prime if:
+// 1. It is greater than 1
+// 2. It has no divisors other than 1 and itself
+    cmp     x0, #2
+    blt     .not_prime
+    beq     .is_prime
 
-// Test if the year is a leap year. A year is a leap year if:
-// 1. It is divisible by 4
-// 2. If it is divisible by 100, it must also be divisible by 400
-    and     x1, x0, #3            // year divisible by 4?
-    cbnz    x1, .not_a_leap_year
+    and     x1, x0, #1            // number even?
+    cbz     x1, .not_prime
 
-    mov     x2, #100              // Is the year divisible by 100?
-    sdiv    x1, x0, x2            // x = y / 100       | integer division
-    msub    x2, x1, x2, x0        // r = y - (x * 100) | get the remainder
-    cbnz    x2, .is_a_leap_year   // if not, it is a leap year
-
-    and     x2, x1, #3            // Is year / 100 divisible by 4 (by 400)?
-    cbnz    x2, .not_a_leap_year  // if not, it is not a leap year
-
-.is_a_leap_year:
+.is_prime:
     mov     x5, #1
-    b       .print_year
+    b       .print_number
 
-.not_a_leap_year:
+.not_prime:
     mov     x5, #0
-    b       .print_year
+    b       .print_number
 
-.print_year:
+.print_number:
     mov     x0, #1                // stdout
     ldr     x1, [x20, #8]         // argv[1]
     add     x1, x1, x6            // skip leading zeros
@@ -69,16 +63,16 @@ _main:
     mov     x16, #4               // macOS syscall: write
     svc     #0x80
 
-    cbz     x5, .print_not_leap_year
-    adrp    x1, is_a_leap_year@PAGE
-    add     x1, x1, is_a_leap_year@PAGEOFF
-    mov     x2, #is_a_leap_year_len
+    cbz     x5, .print_not_prime
+    adrp    x1, is_prime@PAGE
+    add     x1, x1, is_prime@PAGEOFF
+    mov     x2, #is_prime_len
     b       .print_result
 
-.print_not_leap_year:
-    adrp    x1, not_a_leap_year@PAGE
-    add     x1, x1, not_a_leap_year@PAGEOFF
-    mov     x2, #not_a_leap_year_len
+.print_not_prime:
+    adrp    x1, not_prime@PAGE
+    add     x1, x1, not_prime@PAGEOFF
+    mov     x2, #not_prime_len
 
 .print_result:
     mov     x0, #1                // stdout
@@ -117,17 +111,17 @@ _main:
 
 .section __TEXT, __const
 
-is_a_leap_year:
-    .ascii " is a leap year."
-    .set is_a_leap_year_len, . - is_a_leap_year
+is_prime:
+    .ascii " is a prime number."
+    .set is_prime_len, . - is_prime
 
-not_a_leap_year:
-    .ascii " is not a leap year."
-    .set not_a_leap_year_len, . - not_a_leap_year
+not_prime:
+    .ascii " is not a prime number."
+    .set not_prime_len, . - not_prime
 
 usage:
-    .ascii "Usage: leapyear <year>\n    <year> must be between 1 and 65535"
-    .ascii " (16-bit unsigned integer)"
+    .ascii "Usage: isprime <number>\n    <number> must be between 0 and"
+    .ascii " 18446744073709551615 (64-bit unsigned integer)"
     .set usage_len, . - usage
 
 newline:

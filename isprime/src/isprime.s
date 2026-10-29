@@ -18,7 +18,7 @@ _main:
     mov     x0, #0                // convert argv[1] to integer
     mov     x3, #10               // base 10
     mov     x4, #0                // digit counter for argv[1] length
-    mov     x6, #0                // count leading zeros
+    mov     x5, #0                // count leading zeros
 
 .next_byte:
     ldrb    w2, [x1], #1          // read next byte, advance pointer
@@ -30,18 +30,21 @@ _main:
 
     mov     x7, x0
     mul     x0, x7, x3            // low 64 bits of n * 10
-    umulh   x5, x7, x3            // high 64 bits of n * 10
-    cbnz    x5, .display_usage    // multiplication overflowed
+    umulh   x6, x7, x3            // high 64 bits of n * 10
+    cbnz    x6, .display_usage    // multiplication overflowed
 
     adds    x0, x0, x2            // add digit and set carry
     bcs     .display_usage        // addition overflowed
 
     cmp     x0, #0
-    cinc    x6, x6, eq            // count leading zeros
+    cinc    x5, x5, eq            // count leading zeros
     cinc    x4, x4, ne            // count non-leading-zero digits
     b       .next_byte
 
 .validate:
+    cmp     x4, #0                // edge case: input was all zeros
+    csel    x4, x5, x4, eq        // if there were no non-leading-zero digits,
+    csel    x5, xzr, x5, eq       // swap leading zero count with digit count
     cbz     x4, .display_usage    // no digits provided
 
     cmp     x0, #2
@@ -52,44 +55,56 @@ _main:
     cbz     x1, .not_prime        // even numbers > 2 are not prime
 
 // Uses binary search version of the integer square root algorithm.
-    mov   x2, x0           // Preserve original input for comparison
-    mov   x0, xzr          // Left side (and final result)
-    add   x1, x2, #1       // Right side
+    mov     x2, x0           // preserve original input for comparison
+    mov     x0, xzr          // left side (and final result)
+    add     x1, x2, #1       // right side
 
 .next_root:
-    sub   x3, x1, #1       // One less than right side
-    cmp   x3, x0           // Loop until left side is one less than right side
-    beq   .found_root      // Did we find the integer square root?
-    add   x3, x1, x0       // If not, continue binary search by...
-    lsr   x3, x3, #1       // ...finding the next median
-    mul   x4, x3, x3       // Square the current median
-    cmp   x4, x2           // Compare with original input
-    csel  x0, x3, x0, le   // If too small (or matched), bring left up to median
-    csel  x1, x3, x1, gt   // If too big, bring right side down to median
-    b     .next_root
+    sub     x3, x1, #1       // one less than right side
+    cmp     x3, x0           // loop until left side is one less than right side
+    beq     .found_root      // did we find the integer square root?
+    add     x3, x1, x0       // if not, continue binary search by...
+    lsr     x3, x3, #1       // ...finding the next median
+    mul     x6, x3, x3       // square the current median
+    cmp     x6, x2           // compare with original input
+    csel    x0, x3, x0, le   // if too small or matched, bring left up to median
+    csel    x1, x3, x1, gt   // if too big, bring right side down to median
+    b       .next_root
+
+// At this point:
+// x0 contains the integer square root
+// x2 contains the original input
+// x4 contains the number of non-leading-zero digits
+// x5 contains the number of leading zeros
 
 .found_root:
-    // x0 now contains the integer square root
-    // x2 contains the original input
-    // Continue with prime checking logic here
+    mov     x1, #3                // start with 3
+
+.next_odd:
+    cmp     x1, x0                // check if current number is greater than square root
+    bgt     .is_prime             // if so, number is prime
+    udiv    x3, x2, x1            // divide original number by current odd value
+    msub    x6, x3, x1, x2        // get remainder
+    cbz     x6, .not_prime        // if remainder is 0, number is not prime
+    add     x1, x1, #2            // increment by 2 to get next odd number
+    b       .next_odd
 
 .is_prime:
-    mov     x5, #1
+    mov     x6, #1
     b       .print_number
 
 .not_prime:
-    mov     x5, #0
-    b       .print_number
+    mov     x6, #0
 
 .print_number:
     mov     x0, #1                // stdout
     ldr     x1, [x20, #8]         // argv[1]
-    add     x1, x1, x6            // skip leading zeros
+    add     x1, x1, x5            // skip leading zeros
     mov     x2, x4                // number of non-leading-zero digits
     mov     x16, #4               // macOS syscall: write
     svc     #0x80
 
-    cbz     x5, .print_not_prime
+    cbz     x6, .print_not_prime
     adrp    x1, is_prime@PAGE
     add     x1, x1, is_prime@PAGEOFF
     mov     x2, #is_prime_len

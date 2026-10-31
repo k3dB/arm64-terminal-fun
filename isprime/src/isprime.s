@@ -42,11 +42,12 @@ _main:
     b       .next_byte
 
 .validate:
-    cmp     x4, #0                // edge case: input was all zeros
-    csel    x4, x5, x4, eq        // if there were no non-leading-zero digits,
-    csel    x5, xzr, x5, eq       // swap leading zero count with digit count
-    cbz     x4, .display_usage    // no digits provided
+    cbnz    x4, .number_valid
+    cbz     x5, .display_usage    // no digits provided
+    mov     x4, #1                // allow zero as valid input
+    sub     x5, x5, #1            // one zero is the input (non-leading zero)
 
+.number_valid:
     cmp     x0, #2
     blo     .not_prime            // 0 and 1 are not prime
     beq     .is_prime             // 2 is prime

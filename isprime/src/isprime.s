@@ -48,45 +48,58 @@ _main:
     cbz     x4, .display_usage    // no digits provided
 
     cmp     x0, #2
-    blt     .not_prime            // 0 and 1 are not prime
+    blo     .not_prime            // 0 and 1 are not prime
     beq     .is_prime             // 2 is prime
 
     and     x1, x0, #1            // number even or odd?
     cbz     x1, .not_prime        // even numbers > 2 are not prime
 
-// Uses binary search version of the integer square root algorithm.
-    mov     x2, x0           // preserve original input for comparison
-    mov     x0, xzr          // left side (and final result)
-    add     x1, x2, #1       // right side
+    mov     x2, x0                // preserve original input
 
-.next_root:
-    sub     x3, x1, #1       // one less than right side
-    cmp     x3, x0           // loop until left side is one less than right side
-    beq     .found_root      // did we find the integer square root?
-    add     x3, x1, x0       // if not, continue binary search by...
-    lsr     x3, x3, #1       // ...finding the next median
-    mul     x6, x3, x3       // square the current median
-    cmp     x6, x2           // compare with original input
-    csel    x0, x3, x0, le   // if too small or matched, bring left up to median
-    csel    x1, x3, x1, gt   // if too big, bring right side down to median
-    b       .next_root
+// Use bitwise square root algorithm
+    mov     x1, #0           // initialize result
+    clz     x6, x0           // count leading zeros in input
+    mov     x7, #63          // start with highest bit position
+    sub     x6, x7, x6       // highest bit position (63 - clz)
+    and     x6, x6, #~1      // clear bit 0 to get highest even bit position
+    mov     x7, #1
+    lsl     x7, x7, x6       // sliding bit mask
 
+.next_root_candidate:
+    cbz     x7, .root_found  // while (bit mask != 0)
+    add     x6, x1, x7       // current result + bit mask
+
+    cmp     x0, x6           // check if n >= result + mask
+    blo     .shift_result    // if not, shift result and mask
+
+    sub     x0, x0, x6       // n -= (result + mask)
+    lsr     x1, x1, #1       // result >>= 1
+    add     x1, x1, x7       // result += mask
+    b       .setup_next
+
+.shift_result:
+    lsr     x1, x1, #1       // result >>= 1
+
+.setup_next:
+    lsr     x7, x7, #2       // mask >>= 2
+    b       .next_root_candidate
+
+.root_found:
 // At this point:
-// x0 contains the integer square root
+// x1 contains the integer square root
 // x2 contains the original input
 // x4 contains the number of non-leading-zero digits
 // x5 contains the number of leading zeros
 
-.found_root:
-    mov     x1, #3                // start with 3
+    mov     x0, #3                // start with 3
 
 .next_odd:
-    cmp     x1, x0                // check if current number is greater than square root
-    bgt     .is_prime             // if so, number is prime
-    udiv    x3, x2, x1            // divide original number by current odd value
-    msub    x6, x3, x1, x2        // get remainder
+    cmp     x0, x1                // only check up to the square root
+    bhi     .is_prime             // no factors before square root => prime
+    udiv    x3, x2, x0            // divide original number by current odd value
+    msub    x6, x3, x0, x2        // get remainder
     cbz     x6, .not_prime        // if remainder is 0, number is not prime
-    add     x1, x1, #2            // increment by 2 to get next odd number
+    add     x0, x0, #2            // increment by 2 to get next odd number
     b       .next_odd
 
 .is_prime:

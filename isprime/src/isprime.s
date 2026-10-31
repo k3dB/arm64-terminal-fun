@@ -86,6 +86,7 @@ _main:
     b       .next_root_candidate
 
 .root_found:
+
 // At this point:
 // x1 contains the integer square root
 // x2 contains the original input
@@ -94,6 +95,7 @@ _main:
 
     mov     x0, #3                // start with 3
 
+// TODO: Use the 6k +/- 1 optimization.
 .next_odd:
     cmp     x0, x1                // only check up to the square root
     bhi     .is_prime             // no factors before square root => prime

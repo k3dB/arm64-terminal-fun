@@ -1,6 +1,8 @@
 # Prime numbers
 assert_output "2 is a prime number."   "$ISPRIME" 2
 assert_output "3 is a prime number."   "$ISPRIME" 3
+assert_output "5 is a prime number."   "$ISPRIME" 5
+assert_output "7 is a prime number."   "$ISPRIME" 7
 assert_output "137 is a prime number." "$ISPRIME" 137
 
 # Large prime numbers

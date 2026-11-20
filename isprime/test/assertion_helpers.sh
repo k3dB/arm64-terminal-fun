@@ -1,6 +1,6 @@
 # Asserts that the command returns 0 and matches the expected output.
 # Pattern: assert_output <expected_output> <command> <args...>
-# Example: assert_output "100 C -> 212 F" "$TEMPCONV" 100 --c-to-f
+# Example: assert_output "7 is a prime number." "$ISPRIME" 7
 assert_output() {
     local expected_output="$1"
     shift
@@ -10,7 +10,7 @@ assert_output() {
 
 # Asserts that the command returns the expected status and output.
 # Pattern: assert_cli <expected_status> <expected_output> <command> <args...>
-# Example: assert_cli 0 "100 C -> 212 F" "$TEMPCONV" 100 --c-to-f
+# Example: assert_cli 0 "7 is a prime number." "$ISPRIME" 7
 assert_cli() {
     local expected_status="$1"
     local expected_output="$2"

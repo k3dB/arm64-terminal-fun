@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 RUNNER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 TESTS_PASSED=0

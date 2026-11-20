@@ -9,7 +9,7 @@ _main:
     stp     x29, x30, [sp, #-16]! // prologue
     stp     x19, x20, [sp, #-16]! // x19 = return code, x20 = *argv
 
-    cmp     x0, #2                // verify exactly one argument provided
+    cmp     w0, #2                // verify exactly one argument provided
     bne     .display_usage
 
     mov     x20, x1               // preserve argv pointer

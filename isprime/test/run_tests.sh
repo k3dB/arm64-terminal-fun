@@ -17,6 +17,7 @@ source "$RUNNER_DIR/assertion_helpers.sh"
 echo
 echo "Passed: $TESTS_PASSED"
 echo "Failed: $TESTS_FAILED"
+echo
 
 if (( TESTS_FAILED > 0 )); then
     exit 1

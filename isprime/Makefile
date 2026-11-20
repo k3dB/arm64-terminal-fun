@@ -24,4 +24,4 @@ clean:
 	rm -rf build bin
 
 test:
-	./test/run_tests.sh
+	/usr/bin/time -p ./test/run_tests.sh

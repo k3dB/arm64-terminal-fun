@@ -8,6 +8,7 @@ A collection of lightweight command-line utilities written in ARM64 assembly (AA
 
 | Project | Description | Key Features |
 | :--- | :--- | :--- |
+| **[`isprime`](isprime/)** | Prime number checker | Accepts 64-bit unsigned integers (`0` to `18446744073709551615`), input sanitization, leading-zero handling, divisibility checks up to the square root. |
 | **[`leapyear`](leapyear/)** | Gregorian calendar leap year evaluator | Command-line argument parsing, 16-bit range validation (`1..65535`), leap year algorithmic checks, leading-zero normalization. |
 | **[`tempconv`](tempconv/)** | Multi-unit temperature conversion tool | Conversions across Celsius, Fahrenheit, and Kelvin; flexible CLI argument ordering; absolute zero validation; half-up / away-from-zero rounding. |
 
@@ -35,6 +36,14 @@ xcode-select --install
 
 Each project contains its own `Makefile` and test suite. You can build and test each utility directly from its directory:
 
+### Prime Number Checker
+```bash
+cd isprime
+make        # Compiles to bin/isprime
+make clean  # Cleans build artifacts
+make test   # Cleans, builds, and runs automated test suite
+```
+
 ### Leap Year Utility
 ```bash
 cd leapyear
@@ -58,6 +67,12 @@ make test   # Cleans, builds, and runs automated test suite
 ```text
 arm64-terminal-fun/
 ├── README.md               # Repository documentation
+├── isprime/                # Prime number checker utility
+│   ├── Makefile            # Build configuration
+│   ├── README.md           # Prime number checker documentation
+│   ├── src/
+│   │   └── isprime.s       # Prime checker assembly source code
+│   └── test/               # Test runner and validation scripts
 ├── leapyear/               # Leap year calculation utility
 │   ├── Makefile            # Build configuration
 │   ├── README.md           # Leap year documentation

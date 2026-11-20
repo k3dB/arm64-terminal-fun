@@ -52,6 +52,9 @@ _main:
     blo     .not_prime            // 0 and 1 are not prime
     beq     .is_prime             // 2 is prime
 
+    cmp     x0, #3
+    beq     .is_prime             // 3 is prime
+
     and     x1, x0, #1            // number even or odd?
     cbz     x1, .not_prime        // even numbers > 2 are not prime
 
@@ -92,18 +95,28 @@ _main:
 // x2 contains the original input
 // x4 contains the number of non-leading-zero digits
 // x5 contains the number of leading zeros
-
-    mov     x0, #3                // start with 3
-
-// TODO: Use the 6k +/- 1 optimization.
-.next_odd:
-    cmp     x0, x1                // only check up to the square root
-    bhi     .is_prime             // no factors before square root => prime
-    udiv    x3, x2, x0            // divide original number by current odd value
+    mov     x0, #3                // Test division by 3
+    udiv    x3, x2, x0            // divide original number by 3
     msub    x6, x3, x0, x2        // get remainder
     cbz     x6, .not_prime        // if remainder is 0, number is not prime
-    add     x0, x0, #2            // increment by 2 to get next odd number
-    b       .next_odd
+    mov     x0, #5                // start 6k +/- 1 algorithm with 5
+
+// Using the 6k +/- 1 optimization to reduce the number of candidates.
+.next_multiple_candidate:
+    cmp     x0, x1                // only check up to the square root
+    bhi     .is_prime
+
+    udiv    x3, x2, x0            // is current candidate a factor?
+    msub    x6, x3, x0, x2
+    cbz     x6, .not_prime
+
+    add     x0, x0, #2            // is current + 2 a factor?
+    udiv    x3, x2, x0
+    msub    x6, x3, x0, x2
+    cbz     x6, .not_prime
+
+    add     x0, x0, #4            // get next candidate (2 + 4 = 6)
+    b       .next_multiple_candidate
 
 .is_prime:
     mov     x6, #1
